@@ -8,7 +8,7 @@ FONTES = $(wildcard *.c)
 
 OBJETOS = $(FONTES:.c=.o)
 
-EXECUTAVEL = tp4
+EXECUTAVEL = sistema_operacional
 
 all: $(EXECUTAVEL)
 
