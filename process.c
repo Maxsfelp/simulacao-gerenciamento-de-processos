@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include "process.h"
 
+Fila *_pronto = malloc(sizeof(Fila));
+_pronto->prox = _pronto;
+Process *_PCB = malloc(sizeof(Process));
+
 char _pipe(char func){
 	return func;
 }
@@ -12,19 +16,19 @@ char _fork(char nome){
 	return nome;
 }
 
-Process *colocanafila (int y, Process *fi) { 
-   Process *nova;
-   nova = malloc (sizeof (Process));
+Fila *colocanafila (int y, Fila *fi) { 
+   Fila *nova;
+   nova = malloc (sizeof (Fila));
    nova->prox = fi->prox;
    fi->prox = nova;
-   fi->conteudo = y;
+   fi->indice = y;
    return nova;
 }
 
-int tiradafila (Process *fi) {
-   Process *p;
+int tiradafila (Fila *fi) {
+   Fila *p;
    p = fi->prox;  // o primeiro da fila
-   int x = p->conteudo;
+   int x = p->indice;
    fi->prox = p->prox;
    free (p);
    return x;  
