@@ -6,7 +6,6 @@
 #include "manager.h"
 
 int main(int argc, char const *argv[]){
-	char pipe = _pipe('D');
-	printf("%c\n", pipe);
+	_pronto = malloc(sizeof(Fila));
 	return 0;
 }
