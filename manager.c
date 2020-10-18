@@ -3,7 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "manager.h"
-#include "process.h"
 
 Fila *colocanafila (int y, Fila *fi) { 
    Fila *nova;

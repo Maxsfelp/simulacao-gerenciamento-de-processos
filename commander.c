@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "commander.h"
-#include "process.h"
+#include "manager.h"
 
 void entrada(){
 	
