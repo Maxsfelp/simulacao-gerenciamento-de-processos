@@ -4,9 +4,9 @@
 #include <unistd.h>
 #include "process.h"
 
-Fila *_pronto = malloc(sizeof(Fila));
-_pronto->prox = _pronto;
-Process *_PCB = malloc(sizeof(Process));
+// _pronto = malloc(sizeof(Fila));
+// _pronto->prox = _pronto;
+// _PCB = malloc(sizeof(Process));
 
 char _pipe(char func){
 	return func;

@@ -2,19 +2,16 @@ typedef struct process{
 	int id;
 } Process;
 
-typedef struct fila {
+typedef struct fila{
    int indice; 
    struct fila *prox;
 } Fila;
 
-//Fila *_pronto;
-//Fila *estadoBloqueado = (*Fila)malloc(sizeof(Fila));
-//Fila *estadoExecutando = (*Fila)malloc(sizeof(Fila));
+Fila *_pronto;
+Fila *_bloqueado;
+Fila *_executando;
 
-//estadoBloqueado->prox = estadoBloqueado;
-
-//estadoExecutando->prox = estadoExecutando;
-
+Process *_PCB;
 
 char _pipe(char func);
 char _fork(char nome);
