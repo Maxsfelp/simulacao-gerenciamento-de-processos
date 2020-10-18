@@ -21,3 +21,10 @@ int tiradafila (Fila *fi) {
    free (p);
    return x;  
 }
+
+void manager(char *comando){
+	_PCB = malloc(sizeof(Process));
+	_pronto = malloc(sizeof(Fila));
+	_bloqueado = malloc(sizeof(Fila));
+	_executando = malloc(sizeof(Fila));
+}
