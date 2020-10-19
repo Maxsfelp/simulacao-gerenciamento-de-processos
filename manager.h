@@ -3,6 +3,8 @@ typedef struct process{
 	int id_pai;
 	int value;
 	int priorit;
+	int tempo_atual;
+	int CPU;
 } Process;
 
 typedef struct cpu{

@@ -28,3 +28,14 @@ void manager(char *comando){
 	_bloqueado = malloc(sizeof(Fila));
 	_executando = malloc(sizeof(Fila));
 }
+
+Process criaProcesso(){
+
+	return;
+}
+
+// void CPU(int value, Process *_pcb, Fila *_exec){ 
+// 	cpu_value = _pcb[_exec->indice].value;
+
+	
+// }

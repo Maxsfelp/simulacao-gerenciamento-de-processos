@@ -1,1 +1,1 @@
-void entrada();
+char *entrada();
