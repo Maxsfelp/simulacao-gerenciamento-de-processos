@@ -26,3 +26,4 @@ char *entrada(){
 	comandos[i-1] = '\0';
 	return comandos;
 }
+

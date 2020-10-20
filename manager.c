@@ -34,8 +34,16 @@ Process criaProcesso(){
 	return;
 }
 
+void _pipe(char comando){
+
+}
+
+void _fork(Fila *exec, Process *pcb){
+	
+}
+
 // void CPU(int value, Process *_pcb, Fila *_exec){ 
 // 	cpu_value = _pcb[_exec->indice].value;
 
-	
+
 // }
