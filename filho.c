@@ -30,6 +30,8 @@ struct ProcessManager{
     int EstadoExecutando; // Ponteiro de índices para executando
 };
 
+// ___________________________________________________ FILA ___________________________________________________ //
+
 TabelaPcb* Inicia (TabelaPcb *Tabela){
     return (TabelaPcb*) calloc (1, sizeof(TabelaPcb));
 }
@@ -88,9 +90,18 @@ char* Pop (TabelaPcb *Tabela, int id){
     return "Processo especificado não encontra-se na lista.\n";
 }
 
+// __________________________________________________ FIM FILA __________________________________________________ //
+
+
+
+
+
+
 
 int main() {
 	char string;
+    struct ProcessManager PM;
+    printf ("%i \n",getpid());
 	do {
         scanf("%c", &string);
         switch(string){
@@ -100,10 +111,10 @@ int main() {
             case 'U':
                 printf ("Desbloquear processo simulado.\n");
                 break;
-            case 'P':
+            case 'P': // Cria Reporter
                 printf ("Imprimir estado atual do sistema.\n");
                 break;
-            case 'T':
+            case 'T': // Cria outro Reporter
                 printf ("Fechar programa.\n");
                 break;
         }
