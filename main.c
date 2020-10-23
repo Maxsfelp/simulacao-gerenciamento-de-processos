@@ -5,7 +5,5 @@
 #include "manager.h"
 
 int main(int argc, char const *argv[]){
-	char *comando = entrada();
-	printf("%s\n", comando);
 	return 0;
 }

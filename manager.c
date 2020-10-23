@@ -22,26 +22,6 @@ int tiradafila (Fila *fi) {
    return x;  
 }
 
-void manager(char *comando){
-	_PCB = malloc(sizeof(Process));
-	_pronto = malloc(sizeof(Fila));
-	_bloqueado = malloc(sizeof(Fila));
-	_executando = malloc(sizeof(Fila));
-}
-
-Process criaProcesso(){
-
-	return;
-}
-
-void _pipe(char comando){
-
-}
-
-void _fork(Fila *exec, Process *pcb){
-	
-}
-
 // void CPU(int value, Process *_pcb, Fila *_exec){ 
 // 	cpu_value = _pcb[_exec->indice].value;
 
