@@ -3,120 +3,155 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#define TabelaSize PM.qtd1
+#define ProntoSize PM.qtd2
+#define BloqueadoSize PM.qtd3
+
+
 typedef struct CPU{
     int valor_inteiro;
-    pid_t *contador_de_programa;
-    pid_t *valor_Atual;
-    int tempo;
+    int tempo; // Tempo do processo
+    FILE *apontador;
+    int contador_de_programa;
+    int Tempo_Atual; // Tempo total
 }CPU;
 
 typedef struct TabelaPcb{
     pid_t id;
     pid_t id_pai;
-    pid_t *contador_do_programa;
+    int contador_de_programa;
+    FILE *arquivo_do_programa;
     int inteiro;
     int prioridade;
     int estado; // 0 - Bloqueado // 1 - Em Espera // 2 - Executando
     int tempo_incial;
     int tempo_utilizado;
+    struct TabelaPcb *prox;
+    struct TabelaPcb *anterior;
 }TabelaPcb;
 
-struct ProcessManager{
+typedef struct ApontaTabela {
+    TabelaPcb *apontador;
+    struct ApontaTabela *prox;
+    struct ApontaTabela *anterior;
+}ApontaTabela;
+
+typedef struct ProcessManager{
     int Tempo;
     CPU CPU;
+    int qtd1,qtd2,qtd3;
     TabelaPcb *Tabela; // Fila
-    int *EstadoPronto; // Ponteiro de índices para prontos
-    int *EstadoBloqueado; // Ponteiro de índices para bloqueados
-    int EstadoExecutando; // Ponteiro de índices para executando
-};
+    ApontaTabela *EstadoPronto; // Ponteiro de índices para prontos
+    ApontaTabela *EstadoBloqueado; // Ponteiro de índices para bloqueados
+    ApontaTabela *EstadoExecutando; // Ponteiro de índices para executando
+}ProcessManager;
 
-// ___________________________________________________ FILA ___________________________________________________ //
 
-TabelaPcb* Inicia (TabelaPcb *Tabela){
-    return (TabelaPcb*) calloc (1, sizeof(TabelaPcb));
+// __________________________________________________ FUNÇÕES __________________________________________________ //
+
+ProcessManager Inicializa_Dados(FILE *init){
+    ProcessManager PM;
+    TabelaSize = 1;
+    ProntoSize = 1;
+    BloqueadoSize = 1;
+    PM.Tabela = (TabelaPcb*) calloc (TabelaSize, sizeof(TabelaPcb));
+    PM.EstadoBloqueado = (ApontaTabela*) calloc (BloqueadoSize, sizeof(ApontaTabela));
+    PM.EstadoPronto = (ApontaTabela*) calloc (ProntoSize, sizeof(ApontaTabela));
+    PM.EstadoExecutando = (ApontaTabela*) calloc (ProntoSize, sizeof(ApontaTabela));
+    PM.Tabela->arquivo_do_programa = init;
+    PM.Tabela->id_pai = getpid();
+    PM.Tabela->estado = 2;
+    PM.Tabela->prox = NULL;
+    PM.Tabela->anterior = PM.Tabela;
+    PM.EstadoBloqueado->apontador = NULL;
+    PM.EstadoBloqueado->prox = NULL;
+    PM.EstadoBloqueado->anterior = NULL;
+    PM.EstadoPronto->apontador = PM.Tabela;
+    PM.EstadoPronto->prox = NULL;
+    PM.EstadoPronto->anterior = NULL;
+    PM.EstadoExecutando->apontador = PM.Tabela;
+    PM.EstadoExecutando->prox = NULL;
+    PM.EstadoExecutando->anterior = NULL;
+    PM.CPU.apontador = PM.Tabela->arquivo_do_programa;
+    PM.CPU.contador_de_programa = 0;
+    PM.CPU.tempo = 0;
+    PM.CPU.Tempo_Atual = 0;
+    PM.CPU.valor_inteiro = PM.Tabela->inteiro;
+    return PM;
 }
 
-TabelaPcb* Esvaziar (TabelaPcb *Tabela){
-    int x = 0;
-    while (Tabela[x].id != 0){
-        Tabela[x].contador_do_programa = NULL;
-        Tabela[x].estado = -1;
-        Tabela[x].id = -1;
-        Tabela[x].id_pai = -1;
-        Tabela[x].inteiro = -1;
-        Tabela[x].prioridade = -1;
-        Tabela[x].tempo_incial = -1;
-        Tabela[x].tempo_utilizado = -1;
-        x++;
-    }
-    return Tabela;
+void Criacao_de_processo(){
+
+
 }
 
-bool Vazia (TabelaPcb *Tabela){
-    int x = 0;
-    while (true){
-        if (Tabela[x].id != -1){
-            return false;
-        }
-    }
-    return true;
+void Substituicao_de_processo(ProcessManager *PM){
+    PM->EstadoExecutando->apontador = PM->EstadoPronto->prox->apontador;
+    PM->EstadoPronto = PM->EstadoPronto->prox;
 }
 
-TabelaPcb* Push (TabelaPcb *Tabela, TabelaPcb tabela){
-    int x = 0;
-    while (Tabela[x].id != 0){
-        x++;
-    }
-    Tabela[x].id = tabela.id;
-    Tabela[x].estado = tabela.estado;
-    Tabela[x].contador_do_programa = tabela.contador_do_programa;
-    Tabela[x].id_pai = tabela.id_pai;
-    Tabela[x].inteiro = tabela.inteiro;
-    Tabela[x].prioridade = tabela.prioridade;
-    Tabela[x].tempo_incial = tabela.tempo_incial;
-    Tabela[x].tempo_utilizado = tabela.tempo_utilizado;
-    return Tabela;
+void Gerenciamento_de_transicao(ProcessManager *PM){
+    PM->EstadoExecutando->apontador->arquivo_do_programa = PM->CPU.apontador;
+    PM->EstadoExecutando->apontador->tempo_utilizado = PM->CPU.tempo;
+    PM->EstadoExecutando->apontador->inteiro = PM->CPU.valor_inteiro;
+    PM->EstadoExecutando->apontador->contador_de_programa = PM->CPU.contador_de_programa;
 }
 
-char* Pop (TabelaPcb *Tabela, int id){
-    int x = 0;
-    while (Tabela[x].id != id && Tabela[x].id != 0){
-        x++;
-    }
-    if (Tabela[x].id == id){
-        // TODO: Remover Processo
-        return "Processo Removido com sucesso.\n";
-    }
-    return "Processo especificado não encontra-se na lista.\n";
+void Troca_de_contexo(ProcessManager *PM){
+    PM->CPU.valor_inteiro = PM->EstadoPronto->prox->apontador->inteiro;
+    PM->CPU.contador_de_programa = PM->EstadoPronto->prox->apontador->contador_de_programa;
+    PM->CPU.tempo = PM->EstadoPronto->prox->apontador->tempo_utilizado;
+    PM->CPU.apontador = PM->EstadoPronto->prox->apontador->arquivo_do_programa;
 }
 
-// __________________________________________________ FIM FILA __________________________________________________ //
+void Escalonador(ProcessManager *PM){ // Politica adotada: Tipo FIFO ignorando prioridade
+    /*  
+        1 - Pegar os dados da CPU e mandar para a Tabela PCB (atualizar)
+        2 - Pegar o próximo processo pronto e colocar na CPU
+        3 - Atualizar os vetores Pronto e Executando
+    */
+    Gerenciamento_de_transicao(PM); // 1
+    Troca_de_contexo(PM); // 2
+    Substituicao_de_processo(PM); // 3 
+}
 
 
-
-
+// _________________________________________________ FIM FUNÇÕES _________________________________________________ //
 
 
 
 int main() {
-	char string;
-    struct ProcessManager PM;
-    printf ("%i \n",getpid());
-	do {
-        scanf("%c", &string);
-        switch(string){
-            case 'Q':
-                printf ("Troca de contexto.\n");
-                break;
-            case 'U':
-                printf ("Desbloquear processo simulado.\n");
-                break;
-            case 'P': // Cria Reporter
-                printf ("Imprimir estado atual do sistema.\n");
-                break;
-            case 'T': // Cria outro Reporter
-                printf ("Fechar programa.\n");
-                break;
-        }
-	} while(string != 'T');
+    pid_t ProcessManager;
+    FILE *init;
+    init = fopen ("init.txt","r");
+
+    if((ProcessManager = fork()) == -1) {
+        perror("fork");
+    }
+
+    if(ProcessManager == 0) { // Process Init Executando
+
+    }else{ // Process Manager Executando
+        char string;
+        struct ProcessManager PM;
+        PM = Inicializa_Dados(init);
+        do {
+            scanf("%c", &string);
+            switch(string){
+                case 'Q':
+                    printf ("Troca de contexto.\n");
+                    //Escalonador(PM);
+                    break;
+                case 'U':
+                    printf ("Desbloquear processo simulado.\n");
+                    break;
+                case 'P': // Cria Reporter
+                    printf ("Imprimir estado atual do sistema.\n");
+                    break;
+                case 'T': // Cria outro Reporter
+                    printf ("Fechar programa.\n");
+                    break;
+            }
+        } while(string != 'T');
+    }
 }
