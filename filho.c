@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <unistd.h>
-#include <sys/wait.h>
 
 #define Tempo PM.CPU.Tempo_Atual
 #define Ex auxiliar->apontador
@@ -159,7 +157,6 @@ void Criacao_de_processo(ProcessManager *PM){
         PM->EstadoPronto->anterior->anterior = auxiliar2;
         PM->EstadoPronto->anterior->apontador = auxiliar;
     }
-    
 }
 
 void Troca_de_Imagem(ProcessManager *PM, FILE *input){ // Altera o programa de execução do processo (R)
@@ -339,6 +336,7 @@ void Escalonador(ProcessManager *PM){ // Politica adotada: Fila Circular, sem re
 }
 
 int Reportar (ProcessManager *PM){
+    int verifica = 0;
     ApontaTabela *auxiliar, *auxiliar2;
     printf ("****************************************************************\n");
     printf ("Estado do Sistema:\n");
@@ -361,10 +359,16 @@ int Reportar (ProcessManager *PM){
     }
     if (PM->EstadoPronto->apontador != NULL){
         printf ("PROCESSOS PRONTOS:\n");
-        auxiliar2 = PM->EstadoPronto->anterior;
-        while (auxiliar2 != auxiliar){
-            printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Ep->id, Ep->ip, Ep->p, Ep->in, Ep->ti, Ep->tu);
-            auxiliar = auxiliar->prox;
+        auxiliar = PM->EstadoPronto;
+        if (PM->EstadoPronto->anterior != NULL){
+            auxiliar2 = PM->EstadoPronto->anterior;
+            while (verifica == 0){
+                printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Ep->id, Ep->ip, Ep->p, Ep->in, Ep->ti, Ep->tu);
+                auxiliar = auxiliar->prox;
+                if (auxiliar->apontador->id == auxiliar2->apontador->id){
+                    verifica = 1;
+                }
+            }
         }
         printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Ep->id, Ep->ip, Ep->p, Ep->in, Ep->ti, Ep->tu);
     }
@@ -414,15 +418,14 @@ int main() {
                         Criacao_de_processo(&PM);
                         fscanf(PM.CPU.apontador, "%i", &valor2);
                         PM.CPU.contador_de_programa+= valor2;
-                        printf ("Valor2 = %i\n",valor2);
-                        while(contador != valor2){ // Percorrer as 'n' linhas da instrução F
+                        contador = 0;
+                        while(contador < valor2){ // Percorrer as 'n' linhas da instrução F
                             fscanf (PM.CPU.apontador, "%s", &str);
                             if (str != 'B'){
                                 fscanf (PM.CPU.apontador, "%i", &valor3);
                             }
-                            contador++;
+                            contador+=1;
                         }
-                        contador = 0;
                         break;
                     case 'R': // Trocar o arquivo que será executado pelo processo
                         fscanf (PM.CPU.apontador, "%s", arquivo);
