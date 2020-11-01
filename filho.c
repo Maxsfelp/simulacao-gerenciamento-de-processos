@@ -1,7 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define Tempo PM.CPU.Tempo_Atual
+#define Ex auxiliar->apontador
+#define Eb auxiliar->apontador
+#define Ep auxiliar->apontador
+#define ip id_pai
+#define p prioridade
+#define in inteiro
+#define ti tempo_inicial
+#define tu tempo_utilizado
+
+
 
 typedef struct CPU{
     int valor_inteiro;
@@ -19,7 +32,7 @@ typedef struct TabelaPcb{
     int inteiro;
     int prioridade;
     int estado; // 0 - Bloqueado // 1 - Pronto // 2 - Executando
-    int tempo_incial;
+    int tempo_inicial;
     int tempo_utilizado;
     struct TabelaPcb *prox;
     struct TabelaPcb *anterior;
@@ -61,7 +74,7 @@ ProcessManager Inicializa_Dados(FILE *init){
     PM.Tabela->inteiro = 0;
     PM.Tabela->prioridade = 0;
     PM.Tabela->prox = NULL;
-    PM.Tabela->tempo_incial = 0;
+    PM.Tabela->tempo_inicial = 0;
     PM.Tabela->tempo_utilizado = 0;
     // Estado Bloqueado
     PM.EstadoBloqueado->apontador = NULL;
@@ -76,7 +89,7 @@ ProcessManager Inicializa_Dados(FILE *init){
     PM.EstadoExecutando->prox = NULL;
     PM.EstadoExecutando->anterior = NULL;
     // CPU
-    PM.CPU.apontador = PM.Tabela->arquivo_do_programa;
+    PM.CPU.apontador = PM.EstadoExecutando->apontador->arquivo_do_programa;
     PM.CPU.contador_de_programa = PM.EstadoExecutando->apontador->contador_de_programa;
     PM.CPU.tempo = PM.EstadoExecutando->apontador->tempo_utilizado;
     PM.CPU.Tempo_Atual = 0;
@@ -100,7 +113,7 @@ void Criacao_de_processo(ProcessManager *PM){
         auxiliar->id = PM->qtd;
         auxiliar->inteiro = PM->EstadoExecutando->apontador->inteiro;
         auxiliar->prioridade = PM->EstadoExecutando->apontador->prioridade;
-        auxiliar->tempo_incial = PM->CPU.Tempo_Atual;
+        auxiliar->tempo_inicial = PM->CPU.Tempo_Atual;
         auxiliar->tempo_utilizado = 0;
         auxiliar->prox = NULL;
         auxiliar->anterior = PM->Tabela;
@@ -119,13 +132,18 @@ void Criacao_de_processo(ProcessManager *PM){
         auxiliar->id = PM->qtd;
         auxiliar->inteiro = PM->EstadoExecutando->apontador->inteiro;
         auxiliar->prioridade = PM->EstadoExecutando->apontador->prioridade;
-        auxiliar->tempo_incial = PM->CPU.Tempo_Atual;
+        auxiliar->tempo_inicial = PM->CPU.Tempo_Atual;
         auxiliar->tempo_utilizado = 0;
         PM->qtd += 1;
     }
     /* Adicionar processo na fila de prontos (auxiliar aponta para o processo adicionado na tabela pcb)
      A criação foi feita usando uma fila com circulo, ou seja, o ultimo aponta pro primeiro e o primeiro tem um apontador pro ultimo*/
-    if (PM->EstadoPronto->prox == NULL){ // Apenas um processo pronto
+    if (PM->EstadoPronto->apontador == NULL){ // Nenhum processo Pronto
+        PM->EstadoPronto->apontador = auxiliar;
+        PM->EstadoPronto->anterior = NULL;
+        PM->EstadoPronto->prox = NULL;
+    }  
+    else if (PM->EstadoPronto->prox == NULL){ // Apenas um processo pronto
         // Monta um circulo
         PM->EstadoPronto->prox = (ApontaTabela*) calloc (1,sizeof(ApontaTabela));
         PM->EstadoPronto->anterior = PM->EstadoPronto->prox;
@@ -133,7 +151,7 @@ void Criacao_de_processo(ProcessManager *PM){
         PM->EstadoPronto->prox->anterior = PM->EstadoPronto;
         PM->EstadoPronto->prox->apontador = auxiliar;
     }
-    else{ // Existem mais processos prontos
+    else{ // Existem n processos prontos
         auxiliar2 = PM->EstadoPronto->anterior;
         PM->EstadoPronto->anterior = (ApontaTabela*) calloc (1,sizeof(ApontaTabela));
         PM->EstadoPronto->anterior->prox = PM->EstadoPronto;
@@ -214,21 +232,22 @@ void Gerenciamento_de_transicao(ProcessManager *PM, int value){ // Gerencia as t
                 }
             }
             
-            // Tirar ele da TabelaPcb
+            // Tirar ele da TabelaPcb (EstadoExecutando->apontador = TabelaPcb)
             if (PM->EstadoExecutando->apontador->anterior == NULL && PM->EstadoExecutando->apontador->prox == NULL){ // Não existem mais processos na Tabela
                 free(PM->Tabela);
             }
-            else if (PM->EstadoExecutando->apontador->prox == NULL){ // Ultimo Processo da fila
+            else if (PM->EstadoExecutando->apontador->prox == NULL){ // Ultimo Processo na Tabela
                 auxiliar2 = PM->EstadoExecutando->apontador;
                 auxiliar2->anterior->prox = NULL;
                 free(auxiliar2);
             }
-            else if (PM->EstadoExecutando->apontador->anterior == NULL){ // Primeiro processo da fila
+            else if (PM->EstadoExecutando->apontador->anterior == NULL){ // Primeiro processo na Tabela
+                PM->Tabela = PM->Tabela->prox;
                 auxiliar2 = PM->EstadoExecutando->apontador;
                 auxiliar2->prox->anterior = NULL;
                 free(auxiliar2);
             }
-            else{ //Processo no meio da fila
+            else{ //Processo no meio da Tabela
                 auxiliar2 = PM->EstadoExecutando->apontador;
                 auxiliar2->prox->anterior = auxiliar2->anterior;
                 auxiliar2->anterior->prox = auxiliar2->prox;
@@ -248,25 +267,25 @@ void Gerenciamento_de_transicao(ProcessManager *PM, int value){ // Gerencia as t
             }
             else{ // Existem N processos na fila de Bloqueados
                 auxiliar = PM->EstadoBloqueado;
-                auxiliar->apontador->estado = 1;
+                auxiliar->apontador->estado = 1; // Pronto
                 PM->EstadoBloqueado = PM->EstadoBloqueado->prox;
                 auxiliar->prox->anterior = NULL;
             }
 
             // Atualizando Lista de Prontos
-            if (PM->EstadoPronto->apontador == NULL){ // Não existem processos na fila de prontos
+            if (PM->EstadoPronto->apontador == NULL && PM->EstadoBloqueado->apontador != NULL){ // Não existem processos na fila de prontos
                 PM->EstadoPronto->apontador = auxiliar->apontador;
                 PM->EstadoPronto->prox = NULL;
                 PM->EstadoPronto->anterior = NULL;
             }
-            else if (PM->EstadoPronto->prox == NULL){ // Apenas um processo pronto
+            else if (PM->EstadoPronto->prox == NULL && PM->EstadoBloqueado->apontador != NULL){ // Apenas um processo pronto
                 PM->EstadoPronto->prox = (ApontaTabela*) calloc (1,sizeof(ApontaTabela));
                 PM->EstadoPronto->anterior = PM->EstadoPronto->prox;
                 PM->EstadoPronto->prox->prox = PM->EstadoPronto;
                 PM->EstadoPronto->prox->anterior = PM->EstadoPronto;
                 PM->EstadoPronto->prox->apontador = auxiliar->apontador;
             }
-            else{ // Existem N processos Prontos na fila
+            else if (PM->EstadoBloqueado->apontador != NULL){ // Existem N processos Prontos na fila
                 auxiliar3 = PM->EstadoPronto->anterior;
                 PM->EstadoPronto->anterior = (ApontaTabela*) calloc (1,sizeof(ApontaTabela));
                 PM->EstadoPronto->anterior->prox = PM->EstadoPronto;
@@ -274,13 +293,20 @@ void Gerenciamento_de_transicao(ProcessManager *PM, int value){ // Gerencia as t
                 PM->EstadoPronto->anterior->anterior = auxiliar3;
                 PM->EstadoPronto->anterior->apontador = auxiliar->apontador;
             }
-            
+
+            //Reatualizando a Lista de Bloqueado
+            if (auxiliar->prox == NULL && PM->EstadoBloqueado->apontador != NULL){ // Não terá mais processos bloqueados
+                auxiliar->apontador = NULL;
+            }
+            else if (auxiliar != PM->EstadoBloqueado && PM->EstadoBloqueado->apontador != NULL){ // Apagando o processo que foi removido
+                free(auxiliar);
+            }
             break;
     }
 }
 
 void Troca_de_contexo(ProcessManager *PM){ // Altera o processo em execução
-    // Guarda os dados da CPU na TabelaPBC. (EstadoExecutando->apontador aponta para o processo na tabela PCB)
+    // Guarda os dados da CPU na TabelaPBC. (EstadoExecutando->apontador aponta para o processo na TabelaPcb)
     PM->EstadoExecutando->apontador->arquivo_do_programa = PM->CPU.apontador;
     PM->EstadoExecutando->apontador->tempo_utilizado = PM->CPU.tempo;
     PM->EstadoExecutando->apontador->inteiro = PM->CPU.valor_inteiro;
@@ -296,16 +322,58 @@ void Troca_de_contexo(ProcessManager *PM){ // Altera o processo em execução
     }
 }
 
-void Escalonador(ProcessManager *PM){ // Politica adotada: Tipo FIFO ignorando prioridade
-    // TODO:
-    /* 1 - Verificar se ainda existem processos prontos para serem executados, se existir executa o próximo, ou o mesmo ainda (no caso de 1) [tratado na propria funcao]
-       2 - Se não existir, verificar se exisitem processos bloqueados que podem ser tornar prontos.
-       3 - Se não houver, fechar o programa, considerar como uma instrução do tipo T e finalizar a execução geral do código.
-    */
-    Troca_de_contexo(PM);
+void Escalonador(ProcessManager *PM){ // Politica adotada: Fila Circular, sem reorganização dos processos por prioridade.
+    PM->CPU.Tempo_Atual+=1;
+    PM->CPU.tempo+=1;
+    PM->CPU.contador_de_programa+=1;
+
+    if (PM->EstadoPronto->apontador != NULL){ // Se ainda houver processos que podem ser executados
+        Troca_de_contexo(PM);
+    }
+    else if (PM->EstadoBloqueado->apontador != NULL){ // Existem processos, mas todos eles estão bloqueados
+        printf ("\nNão há processos prontos para serem executados. Aguardando desbloquear algum processo.\n");
+    }
+    else{ // Não possuem mais processos, nem prontos, nem bloqueados
+        printf ("\nNão existem mais processos no programa.\n");
+    }
 }
 
-
+int Reportar (ProcessManager *PM){
+    ApontaTabela *auxiliar, *auxiliar2;
+    printf ("****************************************************************\n");
+    printf ("Estado do Sistema:\n");
+    printf ("****************************************************************\n");
+    printf ("TEMPO ATUAL: %i \n",PM->CPU.tempo);
+    printf ("PROCESSO EXECUTANDO: \n");
+    auxiliar = PM->EstadoExecutando;
+    printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Ex->id, Ex->ip, Ex->p, Ex->in, Ex->ti, Ex->tu);
+    if (PM->EstadoBloqueado->apontador != NULL){
+        printf ("BLOQUEADO:\n");
+        auxiliar = PM->EstadoBloqueado;
+        while (auxiliar->prox != NULL){
+            printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Eb->id, Eb->ip, Eb->p, Eb->in, Eb->ti, Eb->tu);
+            auxiliar = auxiliar->prox;
+        }
+        printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Eb->id, Eb->ip, Eb->p, Eb->in, Eb->ti, Eb->tu);
+    }
+    else{
+        printf ("NÃO HÁ PROCESSOS BLOQUEADOS\n");
+    }
+    if (PM->EstadoPronto->apontador != NULL){
+        printf ("PROCESSOS PRONTOS:\n");
+        auxiliar2 = PM->EstadoPronto->anterior;
+        while (auxiliar2 != auxiliar){
+            printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Ep->id, Ep->ip, Ep->p, Ep->in, Ep->ti, Ep->tu);
+            auxiliar = auxiliar->prox;
+        }
+        printf ("pid: %i, ppid: %i, prioridade: %i, valor: %i, tempo inicio: %i, CPU usada até agora: %i\n",Ep->id, Ep->ip, Ep->p, Ep->in, Ep->ti, Ep->tu);
+    }
+    else{
+        printf ("NÃO HÁ PROCESSOS PRONTOS\n");
+    }
+    printf ("****************************************************************\n");
+    return 0;
+}
 // _________________________________________________ FIM FUNÇÕES _________________________________________________ //
 
 
@@ -314,69 +382,66 @@ int main() {
     FILE *init, *simulados;
     init = fopen ("init.txt","r");
     char string;
-    char valor1, str[30];
-    int valor2, contador = 0;
+    char valor1, str, *arquivo;
+    int valor2,valor3, contador = 0;
     struct ProcessManager PM;
     PM = Inicializa_Dados(init);
     do {
         scanf("%c", &string);
         switch(string){
-            case 'Q':
-                fscanf(PM.CPU.apontador, "%c",&valor1);
+            case 'Q': // Executar Unidade de Tempo
+                fscanf(PM.CPU.apontador,"%s", &valor1);
                 switch(valor1){
-                    case 'S':
-                        fscanf(PM.CPU.apontador, "%i",&valor2);
+                    case 'S': // Atribuir valor
+                        fscanf(PM.CPU.apontador, "%i", &valor2);
                         PM.CPU.valor_inteiro = valor2;
                         break;
-                    case 'A':
-                        fscanf(PM.CPU.apontador, "%i",&valor2);
+                    case 'A': // Somar valor ao inteiro
+                        fscanf(PM.CPU.apontador, "%i", &valor2);
                         PM.CPU.valor_inteiro += valor2;
                         break;
-                    case 'D':
-                        fscanf(PM.CPU.apontador, "%i",&valor2);
+                    case 'D': // Subtrair valor ao inteiro
+                        fscanf(PM.CPU.apontador, "%i", &valor2);
                         PM.CPU.valor_inteiro -= valor2;
                         break;
-                    case 'B':
-                        Gerenciamento_de_transicao(&PM,1);
+                    case 'B': // Bloquear o processo executando
+                        Gerenciamento_de_transicao(&PM, 1);
                         break;
-                    case 'E':
-                        Gerenciamento_de_transicao(&PM,2);
+                    case 'E': // Terminar o processo executando
+                        Gerenciamento_de_transicao(&PM, 2);
                         break;
-                    case 'F':
+                    case 'F': // Criar um novo Processo
                         Criacao_de_processo(&PM);
-                        fscanf(PM.CPU.apontador, "%i",&valor2);
-                        while(contador != valor2){
-                            fscanf (PM.CPU.apontador, "%s", str);
+                        fscanf(PM.CPU.apontador, "%i", &valor2);
+                        PM.CPU.contador_de_programa+= valor2;
+                        printf ("Valor2 = %i\n",valor2);
+                        while(contador != valor2){ // Percorrer as 'n' linhas da instrução F
+                            fscanf (PM.CPU.apontador, "%s", &str);
+                            if (str != 'B'){
+                                fscanf (PM.CPU.apontador, "%i", &valor3);
+                            }
                             contador++;
                         }
                         contador = 0;
                         break;
-                    case 'R':
-                        fscanf (PM.CPU.apontador, "%s",str);
-                        simulados = fopen(str,"r");
-                        Troca_de_Imagem(&PM,simulados);
+                    case 'R': // Trocar o arquivo que será executado pelo processo
+                        fscanf (PM.CPU.apontador, "%s", arquivo);
+                        simulados = fopen(arquivo, "r");
+                        Troca_de_Imagem(&PM, simulados);
                         break;
                 }
-                if (PM.EstadoPronto->apontador != NULL){
-                    Escalonador(&PM);
-
-                }else{
-                    printf ("\nNão possuem processos para serem executados. Aguardando um processo ser desbloquado.\n");
-                }
+                Escalonador(&PM); // Após executar a instrução Q, escalonar um novo processo (se possível)
                 break;
-            case 'U':
-                printf ("Desbloquear processo simulado.\n");
-                // Gerenciamento_de_transicao(&PM,3);
+            case 'U': // Desbloquear primeiro processo simulado
+                Gerenciamento_de_transicao(&PM, 3);
                 break;
-            case 'P': // Cria Reporter
-                printf ("Imprimir estado atual do sistema.\n");
-                // Chamada do Reporter
+            case 'P': // Cria Processo Reporter
+                Reportar(&PM);
                 break;
-            case 'T': // Cria outro Reporter
+            case 'T': 
+                Reportar(&PM);
                 // ApagaDados(&PM);
-                // Chamda outro Reporter
-                printf ("Fechar programa.\n");
-                break;
+                break;            
         }
     } while(string != 'T');
 }
