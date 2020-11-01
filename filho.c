@@ -297,6 +297,11 @@ void Troca_de_contexo(ProcessManager *PM){ // Altera o processo em execução
 }
 
 void Escalonador(ProcessManager *PM){ // Politica adotada: Tipo FIFO ignorando prioridade
+    // TODO:
+    /* 1 - Verificar se ainda existem processos prontos para serem executados, se existir executa o próximo, ou o mesmo ainda (no caso de 1) [tratado na propria funcao]
+       2 - Se não existir, verificar se exisitem processos bloqueados que podem ser tornar prontos.
+       3 - Se não houver, fechar o programa, considerar como uma instrução do tipo T e finalizar a execução geral do código.
+    */
     Troca_de_contexo(PM);
 }
 
@@ -332,13 +337,13 @@ int main() {
                         PM.CPU.valor_inteiro -= valor2;
                         break;
                     case 'B':
-                        //Gerenciamento_de_transicao(&PM,1);
+                        Gerenciamento_de_transicao(&PM,1);
                         break;
                     case 'E':
-                        //Gerenciamento_de_transicao(&PM,2);
+                        Gerenciamento_de_transicao(&PM,2);
                         break;
                     case 'F':
-                        //Criacao_de_processo(&PM);
+                        Criacao_de_processo(&PM);
                         fscanf(PM.CPU.apontador, "%i",&valor2);
                         while(contador != valor2){
                             fscanf (PM.CPU.apontador, "%s", str);
@@ -347,13 +352,13 @@ int main() {
                         contador = 0;
                         break;
                     case 'R':
-                       // fscanf (PM.CPU.apontador, "%s",str);
-                      //  simulados = fopen(str,"r");
-                    //    Troca_de_Imagem(&PM,simulados);
+                        fscanf (PM.CPU.apontador, "%s",str);
+                        simulados = fopen(str,"r");
+                        Troca_de_Imagem(&PM,simulados);
                         break;
                 }
                 if (PM.EstadoPronto->apontador != NULL){
-                    //Escalonador(PM);
+                    Escalonador(&PM);
 
                 }else{
                     printf ("\nNão possuem processos para serem executados. Aguardando um processo ser desbloquado.\n");
