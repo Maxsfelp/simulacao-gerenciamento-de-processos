@@ -22,16 +22,12 @@ int main() {
         dup2(writepipe[0], STDIN_FILENO);
         close(writepipe[0]);
         execlp("./filho", "./filho", NULL); // Troca de contexto, instrução R (execlp (Arquivo que será utilizado, executável, NULL));
-
-    } else { // Commander Executando
+     } else { // Commander Executando
         char s;
-        FILE *input;
-        input = fopen("commander.txt","r");
-        fscanf (input,"%c",&s);
-        while (!(feof (input))){
+        while (1){
+            scanf ("%c", &s);
 		    close(writepipe[0]);
             write(writepipe[1], &s, 1);
-            fscanf (input,"%c",&s);
             sleep(1);
         }
     }
