@@ -71,7 +71,7 @@ void Guarda_Arquivo(ProcessManager *PM, FILE *input){ // Guarda o arquivo na CPU
     if (str[0] == 'R'){
         fscanf (input, "%s",str1);
         strcpy (PM->CPU.apontador->str, str1);
-    }else if (str[0] != 'B'){
+    }else if (str[0] != 'B' && str[0] != 'E'){
         fscanf (input, "%i",&i);
         PM->CPU.apontador->valor = i;
     }
@@ -146,7 +146,7 @@ void Criacao_de_processo(ProcessManager *PM){
         PM->Tabela->prox = (TabelaPcb*) calloc (1,sizeof(TabelaPcb));
         auxiliar = PM->Tabela->prox;
         auxiliar->arquivo_do_programa = PM->EstadoExecutando->apontador->arquivo_do_programa->prox; // Executa na proxima instrução
-        auxiliar->contador_de_programa = PM->EstadoExecutando->apontador->contador_de_programa;
+        auxiliar->contador_de_programa = 0;
         auxiliar->estado = 1; // Pronto
         auxiliar->id_pai = PM->EstadoExecutando->apontador->id;
         auxiliar->id = PM->qtd;
@@ -169,7 +169,7 @@ void Criacao_de_processo(ProcessManager *PM){
         auxiliar->estado = 1; // Pronto
         auxiliar->id_pai = PM->EstadoExecutando->apontador->id;
         auxiliar->id = PM->qtd;
-        auxiliar->inteiro = PM->EstadoExecutando->apontador->inteiro;
+        auxiliar->inteiro = 0;
         auxiliar->prioridade = PM->EstadoExecutando->apontador->prioridade;
         auxiliar->tempo_inicial = PM->CPU.Tempo_Atual;
         auxiliar->tempo_utilizado = 0;
@@ -273,26 +273,25 @@ void Gerenciamento_de_transicao(ProcessManager *PM, int value){ // Gerencia as t
             // Tirar ele da TabelaPcb (EstadoExecutando->apontador = TabelaPcb)
             if (PM->EstadoExecutando->apontador->anterior == NULL && PM->EstadoExecutando->apontador->prox == NULL){ // Não existem mais processos na Tabela
                 free(PM->Tabela);
+                PM->CPU.Tempo_Atual =+1;
+                PM->Tabela = NULL;
             }
             else if (PM->EstadoExecutando->apontador->prox == NULL){ // Ultimo Processo na Tabela
                 auxiliar2 = PM->EstadoExecutando->apontador;
                 auxiliar2->anterior->prox = NULL;
                 free(auxiliar2);
-                free (auxiliar);
             }
             else if (PM->EstadoExecutando->apontador->anterior == NULL){ // Primeiro processo na Tabela
                 PM->Tabela = PM->Tabela->prox;
                 auxiliar2 = PM->EstadoExecutando->apontador;
                 auxiliar2->prox->anterior = NULL;
                 free(auxiliar2);
-                free (auxiliar);
             }
             else{ //Processo no meio da Tabela
                 auxiliar2 = PM->EstadoExecutando->apontador;
                 auxiliar2->prox->anterior = auxiliar2->anterior;
                 auxiliar2->anterior->prox = auxiliar2->prox;
                 free(auxiliar2);
-                free (auxiliar);
             }
             PM->CPU.apontador = NULL;
             break;
@@ -314,19 +313,19 @@ void Gerenciamento_de_transicao(ProcessManager *PM, int value){ // Gerencia as t
             }
 
             // Atualizando Lista de Prontos
-            if (PM->EstadoPronto->apontador == NULL && PM->EstadoBloqueado->apontador != NULL){ // Não existem processos na fila de prontos
+            if (PM->EstadoBloqueado->apontador != NULL && PM->EstadoPronto->apontador == NULL && PM->EstadoBloqueado->apontador != NULL){ // Não existem processos na fila de prontos
                 PM->EstadoPronto->apontador = auxiliar->apontador;
                 PM->EstadoPronto->prox = NULL;
                 PM->EstadoPronto->anterior = NULL;
             }
-            else if (PM->EstadoPronto->prox == NULL && PM->EstadoBloqueado->apontador != NULL){ // Apenas um processo pronto
+            else if (PM->EstadoBloqueado->apontador != NULL && PM->EstadoPronto->prox == NULL && PM->EstadoBloqueado->apontador != NULL){ // Apenas um processo pronto
                 PM->EstadoPronto->prox = (ApontaTabela*) calloc (1,sizeof(ApontaTabela));
                 PM->EstadoPronto->anterior = PM->EstadoPronto->prox;
                 PM->EstadoPronto->prox->prox = PM->EstadoPronto;
                 PM->EstadoPronto->prox->anterior = PM->EstadoPronto;
                 PM->EstadoPronto->prox->apontador = auxiliar->apontador;
             }
-            else if (PM->EstadoBloqueado->apontador != NULL){ // Existem N processos Prontos na fila
+            else if (PM->EstadoBloqueado->apontador != NULL && PM->EstadoBloqueado->apontador != NULL){ // Existem N processos Prontos na fila
                 auxiliar3 = PM->EstadoPronto->anterior;
                 PM->EstadoPronto->anterior = (ApontaTabela*) calloc (1,sizeof(ApontaTabela));
                 PM->EstadoPronto->anterior->prox = PM->EstadoPronto;
@@ -336,13 +335,13 @@ void Gerenciamento_de_transicao(ProcessManager *PM, int value){ // Gerencia as t
             }
 
             //Reatualizando a Lista de Bloqueado
-            if (auxiliar->prox == NULL && PM->EstadoBloqueado->apontador != NULL){ // Não terá mais processos bloqueados
+            if (PM->EstadoBloqueado->apontador != NULL && auxiliar->prox == NULL && PM->EstadoBloqueado->apontador != NULL){ // Não terá mais processos bloqueados
                 auxiliar->apontador = NULL;
             }
-            else if (auxiliar != PM->EstadoBloqueado && PM->EstadoBloqueado->apontador != NULL){ // Apagando o processo que foi removido
+            else if (PM->EstadoBloqueado->apontador != NULL && auxiliar != PM->EstadoBloqueado && PM->EstadoBloqueado->apontador != NULL){ // Apagando o processo que foi removido
                 free(auxiliar);
             }
-            if (PM->CPU.apontador == NULL){ // Se nao tiver nenhum processo executando, o processo desbloqueado será executado
+            if (PM->EstadoBloqueado->apontador != NULL && PM->CPU.apontador == NULL){ // Se nao tiver nenhum processo executando, o processo desbloqueado será executado
                 PM->EstadoExecutando->apontador = PM->EstadoPronto->apontador;
                 PM->EstadoExecutando->apontador->estado = 2;
                 PM->CPU.apontador = PM->EstadoExecutando->apontador->arquivo_do_programa;
@@ -383,7 +382,7 @@ void Troca_de_contexo(ProcessManager *PM){ // Altera o processo em execução
 }
 
 void Escalonador(ProcessManager *PM, char validade){ // Politica adotada: Fila Circular, sem reorganização dos processos por prioridade.
-    if (PM->CPU.apontador != NULL || validade == 'E'){
+    if ((PM->CPU.apontador != NULL || validade == 'E') && (PM->Tabela != NULL)){
         PM->CPU.Tempo_Atual+=1; // Tempo do Sistema
         if (validade != 'R' && PM->CPU.apontador != NULL){
             PM->CPU.tempo+=1; // Tempo do Processo na CPU
@@ -460,7 +459,7 @@ int Reportar (ProcessManager *PM){
 
 int main() {
     FILE *init, *simulados;
-    init = fopen ("init","r"); // ARRUMAR ESSA LINHA NO LINUX, TIRAR O .TXT
+    init = fopen ("init.txt","r"); // ARRUMAR ESSA LINHA NO LINUX, TIRAR O .TXT
     char string;
     char valor1, arquivo[30];
     int valor2, contador = 0;
@@ -503,7 +502,7 @@ int main() {
                             break;
                         case 'R': // Trocar o arquivo que será executado pelo processo
                             strcpy (arquivo, PM.CPU.apontador->str);
-                            //strcat(arquivo,".txt"); // COMENTAR ESSA LINHA NO LINUX 
+                            strcat(arquivo,".txt"); // COMENTAR ESSA LINHA NO LINUX 
                             simulados = fopen(arquivo, "r");
                             Troca_de_Imagem(&PM, simulados);
                             break;
