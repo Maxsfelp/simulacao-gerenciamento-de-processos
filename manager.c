@@ -460,7 +460,7 @@ int Reportar (ProcessManager *PM){
 
 int main() {
     FILE *init, *simulados;
-    init = fopen ("init.txt","r"); // ARRUMAR ESSA LINHA NO LINUX, TIRAR O .TXT
+    init = fopen ("init","r"); // ARRUMAR ESSA LINHA NO LINUX, TIRAR O .TXT
     char string;
     char valor1, arquivo[30];
     int valor2, contador = 0;
@@ -503,7 +503,7 @@ int main() {
                             break;
                         case 'R': // Trocar o arquivo que será executado pelo processo
                             strcpy (arquivo, PM.CPU.apontador->str);
-                            strcat(arquivo,".txt"); // COMENTAR ESSA LINHA NO LINUX 
+                            //strcat(arquivo,".txt"); // COMENTAR ESSA LINHA NO LINUX 
                             simulados = fopen(arquivo, "r");
                             Troca_de_Imagem(&PM, simulados);
                             break;
