@@ -28,7 +28,7 @@ int main() {
             scanf ("%c", &s);
 		    close(writepipe[0]);
             write(writepipe[1], &s, 1);
-            sleep(1);
+            //sleep(1);
         }
     }
     wait(0);
