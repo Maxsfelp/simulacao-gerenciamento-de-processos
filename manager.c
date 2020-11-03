@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include "manager.h"
 
 // __________________________________________________ FUNÇÕES __________________________________________________ //
@@ -94,7 +96,7 @@ void Criacao_de_processo(ProcessManager *PM){
         auxiliar->estado = 1; // Pronto
         auxiliar->id_pai = PM->EstadoExecutando->apontador->id;
         auxiliar->id = PM->qtd;
-        auxiliar->inteiro = PM->EstadoExecutando->apontador->inteiro;
+        auxiliar->inteiro = 0;
         auxiliar->prioridade = PM->EstadoExecutando->apontador->prioridade;
         auxiliar->tempo_inicial = PM->CPU.Tempo_Atual;
         auxiliar->tempo_utilizado = 0;
@@ -109,7 +111,7 @@ void Criacao_de_processo(ProcessManager *PM){
         auxiliar = auxiliar -> prox;
         auxiliar->prox = NULL;
         auxiliar->arquivo_do_programa = PM->EstadoExecutando->apontador->arquivo_do_programa->prox;
-        auxiliar->contador_de_programa = PM->EstadoExecutando->apontador->contador_de_programa;
+        auxiliar->contador_de_programa = 0;
         auxiliar->estado = 1; // Pronto
         auxiliar->id_pai = PM->EstadoExecutando->apontador->id;
         auxiliar->id = PM->qtd;
