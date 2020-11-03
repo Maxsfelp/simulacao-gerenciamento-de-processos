@@ -464,6 +464,10 @@ int main() {
                 break;
             case 'T': 
                 Reportar(&PM);
+                free(PM.Tabela);
+                free(PM.EstadoPronto);
+                free(PM.EstadoBloqueado);
+                free(PM.EstadoExecutando);
                 break;            
         }
     } while(string != 'T');
