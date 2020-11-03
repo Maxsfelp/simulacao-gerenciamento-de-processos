@@ -1,10 +1,10 @@
-S 1000
-A 19
-A 20
-D 23
-A 55
-F 1
+S 20
+A 10
+D 5
+A 5
+F 2
 R file_a
-F 1
-R file_b
+A 6
+B
+D 6
 E
